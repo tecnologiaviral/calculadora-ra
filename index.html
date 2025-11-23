@@ -90,6 +90,7 @@
         readOnly = false,
         icon,
         type = "text",
+        inputMode,
         id,
         color = 'cyan',
         className = ''
@@ -111,6 +112,7 @@
               <input
                 id={id}
                 type={type}
+                inputMode={inputMode}
                 value={value}
                 onChange={onChange}
                 readOnly={readOnly}
@@ -368,7 +370,7 @@
                     Calculadora <span className="text-cyan-400">RA</span>
                   </h1>
                 </div>
-                <p className="text-xs text-gray-400 font-['Share_Tech_Mono'] tracking-widest">v2.1 SYSTEM</p>
+                <p className="text-xs text-gray-400 font-['Share_Tech_Mono'] tracking-widest">v3.0 BY TECNOLOGÍA VIRAL</p>
               </header>
 
               {/* Tab Navigation */}
@@ -416,6 +418,7 @@
                         onChange={(e) => handleWidthChange(e.target.value)}
                         placeholder="1920"
                         color="cyan"
+                        inputMode="decimal"
                       />
                       <RetroInput
                         id="height"
@@ -424,6 +427,7 @@
                         onChange={(e) => handleHeightChange(e.target.value)}
                         placeholder="1080"
                         color="cyan"
+                        inputMode="decimal"
                       />
                     </div>
 
@@ -519,6 +523,7 @@
                         onChange={(e) => handleWidthChange(e.target.value)}
                         placeholder="Ancho"
                         color="cyan"
+                        inputMode="decimal"
                       />
                       <RetroInput
                         id="dim-height"
@@ -527,6 +532,7 @@
                         onChange={(e) => handleHeightChange(e.target.value)}
                         placeholder="Alto"
                         color="cyan"
+                        inputMode="decimal"
                       />
                     </div>
                   </div>
