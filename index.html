@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora de Relación de Aspecto</title>
+    
+    <!-- Tailwind CSS (JIT CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM (UMD for standalone usage) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (to compile JSX in browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      body {
+        font-family: 'Orbitron', sans-serif;
+        background-color: #050510;
+        color: #e0f7fa;
+      }
+      
+      /* Custom scrollbar for Webkit */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #06b6d4; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #22d3ee; 
+      }
+
+      /* Animation classes */
+      .animate-fadeIn {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      // --- UTILS (math.ts) ---
+      
+      const gcd = (a, b) => {
+        if (!b) return a;
+        return gcd(b, a % b);
+      };
+
+      const formatNumber = (num) => {
+        return new Intl.NumberFormat('es-ES').format(num);
+      };
+
+      // --- COMPONENTS ---
+
+      // RetroInput.tsx
+      const RetroInput = ({
+        label,
+        value,
+        onChange,
+        placeholder,
+        readOnly = false,
+        icon,
+        type = "text",
+        id,
+        color = 'cyan',
+        className = ''
+      }) => {
+        const borderColor = color === 'cyan' ? 'border-cyan-500' : 'border-pink-500';
+        const focusRing = color === 'cyan' ? 'focus:ring-cyan-500/50' : 'focus:ring-pink-500/50';
+        const textColor = color === 'cyan' ? 'text-cyan-400' : 'text-pink-400';
+
+        return (
+          <div className={`flex flex-col w-full group relative ${className}`}>
+            <label 
+              htmlFor={id} 
+              className={`text-xs md:text-sm font-bold uppercase mb-1 tracking-widest flex justify-between items-center ${textColor}`}
+            >
+              <span>{label}</span>
+              {icon && <span className="opacity-70 text-xs">{icon}</span>}
+            </label>
+            <div className="relative flex-grow">
+              <input
+                id={id}
+                type={type}
+                value={value}
+                onChange={onChange}
+                readOnly={readOnly}
+                placeholder={placeholder}
+                className={`
+                  w-full bg-black/40 border-2 ${borderColor}
+                  text-white font-['Share_Tech_Mono'] text-lg md:text-xl p-2 md:p-3 rounded-sm
+                  outline-none transition-all duration-200
+                  placeholder-gray-700
+                  focus:ring-4 ${focusRing}
+                  ${readOnly ? 'bg-gray-900/50 text-gray-400 cursor-not-allowed border-dashed' : 'hover:bg-gray-900/50'}
+                `}
+              />
+            </div>
+          </div>
+        );
+      };
+
+      // RetroSelect.tsx
+      const RetroSelect = ({
+        label,
+        value,
+        onChange,
+        options,
+        id,
+        color = 'cyan',
+        className = ''
+      }) => {
+        const borderColor = color === 'cyan' ? 'border-cyan-500' : 'border-pink-500';
+        const textColor = color === 'cyan' ? 'text-cyan-400' : 'text-pink-400';
+        const focusRing = color === 'cyan' ? 'focus:ring-cyan-500/50' : 'focus:ring-pink-500/50';
+
+        return (
+          <div className={`flex flex-col w-full group ${className}`}>
+            <label 
+              htmlFor={id} 
+              className={`text-xs md:text-sm font-bold uppercase mb-1 tracking-widest ${textColor}`}
+            >
+              {label}
+            </label>
+            <div className="relative">
+              <select
+                id={id}
+                value={value}
+                onChange={onChange}
+                className={`
+                  w-full bg-black/40 border-2 ${borderColor}
+                  text-white font-['Share_Tech_Mono'] text-base md:text-lg p-2 md:p-3 rounded-sm
+                  outline-none transition-all duration-200
+                  appearance-none cursor-pointer
+                  focus:ring-4 ${focusRing} hover:bg-gray-900/50
+                `}
+              >
+                {options.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-gray-900 text-white">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {/* Custom Arrow */}
+              <div className={`absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none ${textColor}`}>
+                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      // --- APP COMPONENT ---
+
+      const ASPECT_RATIOS = [
+        { label: 'Personalizado (ancho : alto)', value: 'custom', w: 0, h: 0 },
+        { label: '1.85:1', value: '1.85:1', w: 1.85, h: 1 },
+        { label: '2.4:1', value: '2.4:1', w: 2.4, h: 1 },
+        { label: '21:9', value: '21:9', w: 21, h: 9 },
+        { label: '16:9', value: '16:9', w: 16, h: 9 },
+        { label: '3:2', value: '3:2', w: 3, h: 2 },
+        { label: '4:3', value: '4:3', w: 4, h: 3 },
+        { label: '5:4', value: '5:4', w: 5, h: 4 },
+        { label: '4:5', value: '4:5', w: 4, h: 5 },
+        { label: '3:4', value: '3:4', w: 3, h: 4 },
+        { label: '2:3', value: '2:3', w: 2, h: 3 },
+        { label: '9:16', value: '9:16', w: 9, h: 16 },
+      ];
+
+      const App = () => {
+        const [mode, setMode] = useState('ratio'); // 'ratio' or 'dimensions'
+        
+        // Shared Inputs
+        const [width, setWidth] = useState('');
+        const [height, setHeight] = useState('');
+        
+        // Mode 1: Calculated Ratio
+        const [calcRatioW, setCalcRatioW] = useState('');
+        const [calcRatioH, setCalcRatioH] = useState('');
+
+        // Mode 2: Dimensions Config
+        const [selectedPreset, setSelectedPreset] = useState('16:9');
+        const [customRatioW, setCustomRatioW] = useState('16');
+        const [customRatioH, setCustomRatioH] = useState('9');
+
+        // Logic for Mode 1: Aspect Ratio Calculator
+        useEffect(() => {
+          if (mode === 'ratio') {
+            const w = parseFloat(width.replace(/,/g, ''));
+            const h = parseFloat(height.replace(/,/g, ''));
+
+            if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0) {
+              if (Number.isInteger(w) && Number.isInteger(h)) {
+                const divisor = gcd(w, h);
+                setCalcRatioW((w / divisor).toString());
+                setCalcRatioH((h / divisor).toString());
+              } else {
+                setCalcRatioW(w.toString());
+                setCalcRatioH(h.toString());
+              }
+            } else {
+              setCalcRatioW('');
+              setCalcRatioH('');
+            }
+          }
+        }, [width, height, mode]);
+
+        // Logic for Mode 2: Screen Dimensions Calculator
+        const handlePresetChange = (e) => {
+          const val = e.target.value;
+          setSelectedPreset(val);
+          const preset = ASPECT_RATIOS.find(p => p.value === val);
+          if (preset && val !== 'custom') {
+            setCustomRatioW(preset.w.toString());
+            setCustomRatioH(preset.h.toString());
+            
+            if (width) {
+              const wVal = parseFloat(width.replace(/,/g, ''));
+              if (!isNaN(wVal)) {
+                 const newH = wVal / (preset.w / preset.h);
+                 setHeight(formatNumber(Math.round(newH)));
+              }
+            }
+          } else if (val === 'custom') {
+            setCustomRatioW('');
+            setCustomRatioH('');
+          }
+        };
+
+        const handleWidthChange = (val) => {
+          setWidth(val);
+          if (mode === 'dimensions') {
+            const wVal = parseFloat(val.replace(/,/g, ''));
+            const rW = parseFloat(customRatioW);
+            const rH = parseFloat(customRatioH);
+            
+            if (!isNaN(wVal) && !isNaN(rW) && !isNaN(rH) && rW !== 0) {
+              const newH = wVal * (rH / rW);
+              setHeight(formatNumber(Math.round(newH)));
+            } else if (val === '') {
+              setHeight('');
+            }
+          }
+        };
+
+        const handleHeightChange = (val) => {
+          setHeight(val);
+          if (mode === 'dimensions') {
+            const hVal = parseFloat(val.replace(/,/g, ''));
+            const rW = parseFloat(customRatioW);
+            const rH = parseFloat(customRatioH);
+
+            if (!isNaN(hVal) && !isNaN(rW) && !isNaN(rH) && rH !== 0) {
+              const newW = hVal * (rW / rH);
+              setWidth(formatNumber(Math.round(newW)));
+            } else if (val === '') {
+              setWidth('');
+            }
+          }
+        };
+
+        const handleCustomRatioChange = (newW, newH) => {
+          setCustomRatioW(newW);
+          setCustomRatioH(newH);
+
+          if (width) {
+            const wVal = parseFloat(width.replace(/,/g, ''));
+            const rW = parseFloat(newW);
+            const rH = parseFloat(newH);
+            if (!isNaN(wVal) && !isNaN(rW) && !isNaN(rH) && rW !== 0) {
+               const newHeight = wVal * (rH / rW);
+               setHeight(formatNumber(Math.round(newHeight)));
+            }
+          }
+        };
+
+        const handleTabChange = (newMode) => {
+          if (mode === newMode) return;
+          setMode(newMode);
+          if (newMode === 'ratio') {
+             setWidth('');
+             setHeight('');
+             setCalcRatioW('');
+             setCalcRatioH('');
+          } else {
+             setWidth('');
+             setHeight('');
+             setSelectedPreset('16:9');
+             setCustomRatioW('16');
+             setCustomRatioH('9');
+          }
+        };
+
+        const handleReset = () => {
+          if (mode === 'ratio') {
+            setWidth('');
+            setHeight('');
+            setCalcRatioW('');
+            setCalcRatioH('');
+          } else {
+            setSelectedPreset('16:9');
+            setCustomRatioW('16');
+            setCustomRatioH('9');
+            setWidth('');
+            setHeight('');
+          }
+        };
+
+        const handleClearData = () => {
+          if (selectedPreset === 'custom') {
+            setCustomRatioW('');
+            setCustomRatioH('');
+            setWidth('');
+            setHeight('');
+          }
+        };
+
+        return (
+          <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans selection:bg-cyan-500 selection:text-black">
+            {/* Neo-Brutalist Grid Background */}
+            <div className="fixed inset-0 z-0 pointer-events-none" 
+                 style={{
+                   backgroundImage: `
+                     linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                     linear-gradient(to bottom, rgba(236, 72, 153, 0.05) 1px, transparent 1px)
+                   `,
+                   backgroundSize: '24px 24px'
+                 }}>
+            </div>
+
+            <div className="relative z-10 w-full max-w-md mx-auto">
+              
+              {/* Header */}
+              <header className="mb-6 text-center">
+                <div className="inline-block border-2 border-cyan-500 p-2 mb-2 bg-black/50 backdrop-blur-sm">
+                  <h1 className="text-xl md:text-2xl font-black text-white tracking-tighter font-['Orbitron'] uppercase">
+                    Calculadora <span className="text-cyan-400">RA</span>
+                  </h1>
+                </div>
+                <p className="text-xs text-gray-400 font-['Share_Tech_Mono'] tracking-widest">v2.1 SYSTEM</p>
+              </header>
+
+              {/* Tab Navigation */}
+              <div className="flex w-full mb-6 font-['Orbitron']">
+                <button 
+                  onClick={() => handleTabChange('ratio')}
+                  className={`
+                    flex-1 py-3 text-xs md:text-sm font-bold uppercase tracking-wider border-2 border-r-0 transition-all duration-300
+                    ${mode === 'ratio' 
+                      ? 'bg-cyan-500 text-black border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
+                      : 'bg-black/60 text-gray-500 border-gray-700 hover:text-cyan-400 hover:bg-gray-900'}
+                    rounded-l-md
+                  `}
+                >
+                  Relación
+                </button>
+                <button 
+                  onClick={() => handleTabChange('dimensions')}
+                  className={`
+                    flex-1 py-3 text-xs md:text-sm font-bold uppercase tracking-wider border-2 transition-all duration-300
+                    ${mode === 'dimensions' 
+                      ? 'bg-pink-500 text-black border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.4)]' 
+                      : 'bg-black/60 text-gray-500 border-gray-700 hover:text-pink-400 hover:bg-gray-900'}
+                    rounded-r-md
+                  `}
+                >
+                  Dimensiones
+                </button>
+              </div>
+
+              {/* Main Content Card */}
+              <main className="bg-gray-900/80 border-2 border-gray-800 backdrop-blur-xl p-4 md:p-6 rounded-md shadow-2xl relative overflow-hidden">
+                
+                {/* Decorative Corner Accent */}
+                <div className={`absolute top-0 right-0 w-16 h-16 -mt-8 -mr-8 rotate-45 ${mode === 'ratio' ? 'bg-cyan-500/20' : 'bg-pink-500/20'}`}></div>
+
+                {/* --- MODE 1: RATIO CALCULATOR --- */}
+                {mode === 'ratio' && (
+                  <div className="space-y-6 animate-fadeIn">
+                    <div className="grid grid-cols-2 gap-4">
+                      <RetroInput
+                        id="width"
+                        label="Ancho (px)"
+                        value={width}
+                        onChange={(e) => handleWidthChange(e.target.value)}
+                        placeholder="1920"
+                        color="cyan"
+                      />
+                      <RetroInput
+                        id="height"
+                        label="Alto (px)"
+                        value={height}
+                        onChange={(e) => handleHeightChange(e.target.value)}
+                        placeholder="1080"
+                        color="cyan"
+                      />
+                    </div>
+
+                    <div className="relative h-px bg-gray-800 my-4 flex items-center justify-center">
+                      <div className="bg-gray-900 px-3 text-gray-500 text-xs font-['Share_Tech_Mono'] uppercase tracking-widest">
+                        Resultados
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <RetroInput
+                        id="ra-width"
+                        label="Ancho RA"
+                        value={calcRatioW ? formatNumber(parseInt(calcRatioW)) : ''}
+                        readOnly
+                        color="pink"
+                        placeholder="-"
+                      />
+                      <RetroInput
+                        id="ra-height"
+                        label="Alto RA"
+                        value={calcRatioH ? formatNumber(parseInt(calcRatioH)) : ''}
+                        readOnly
+                        color="pink"
+                        placeholder="-"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* --- MODE 2: DIMENSIONS CALCULATOR --- */}
+                {mode === 'dimensions' && (
+                  <div className="space-y-5 animate-fadeIn">
+                     <RetroSelect
+                        id="preset-select"
+                        label="Preset"
+                        value={selectedPreset}
+                        onChange={handlePresetChange}
+                        options={ASPECT_RATIOS}
+                        color="pink"
+                     />
+
+                     <div className="grid grid-cols-2 gap-4 items-end">
+                        <RetroInput
+                          id="custom-rw"
+                          label="Ancho RA"
+                          value={customRatioW}
+                          onChange={(e) => handleCustomRatioChange(e.target.value, customRatioH)}
+                          readOnly={selectedPreset !== 'custom'}
+                          placeholder="W"
+                          color="pink"
+                          type="number"
+                        />
+                        
+                        <div className="flex items-end gap-2 w-full">
+                          <div className="flex-grow">
+                            <RetroInput
+                              id="custom-rh"
+                              label="Alto RA"
+                              value={customRatioH}
+                              onChange={(e) => handleCustomRatioChange(customRatioW, e.target.value)}
+                              readOnly={selectedPreset !== 'custom'}
+                              placeholder="H"
+                              color="pink"
+                              type="number"
+                            />
+                          </div>
+                          {selectedPreset === 'custom' && (
+                            <button 
+                              onClick={handleClearData}
+                              className="h-[46px] w-[46px] md:h-[54px] md:w-[54px] flex-none bg-gray-900 border-2 border-red-500 text-red-500 rounded-sm hover:bg-red-500 hover:text-white transition-all duration-200 flex items-center justify-center text-lg md:text-xl"
+                              title="Borrar datos"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+                     </div>
+
+                     {/* Visual Separator */}
+                     <div className="bg-black/30 border border-gray-800 p-2 text-center rounded-sm">
+                       <span className="text-xs text-gray-500 uppercase tracking-widest mr-2">Proporción actual:</span>
+                       <span className="text-lg font-bold text-pink-400 font-['Share_Tech_Mono']">
+                         {customRatioW || '?'} : {customRatioH || '?'}
+                       </span>
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                      <RetroInput
+                        id="dim-width"
+                        label="Ancho (px)"
+                        value={width}
+                        onChange={(e) => handleWidthChange(e.target.value)}
+                        placeholder="Ancho"
+                        color="cyan"
+                      />
+                      <RetroInput
+                        id="dim-height"
+                        label="Alto (px)"
+                        value={height}
+                        onChange={(e) => handleHeightChange(e.target.value)}
+                        placeholder="Alto"
+                        color="cyan"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Footer */}
+                <div className="mt-8 pt-4 border-t border-gray-800">
+                  <button
+                    onClick={handleReset}
+                    className={`
+                      w-full group relative overflow-hidden
+                      border-2 font-bold py-3 px-4 rounded-sm uppercase tracking-wider text-sm
+                      transition-all duration-300
+                      ${mode === 'ratio' 
+                        ? 'border-cyan-500 text-cyan-500 hover:bg-cyan-500 hover:text-black' 
+                        : 'border-pink-500 text-pink-500 hover:bg-pink-500 hover:text-black'}
+                    `}
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2 font-['Orbitron']">
+                      🔄 Recargar
+                    </span>
+                  </button>
+                </div>
+
+              </main>
+            </div>
+          </div>
+        );
+      };
+
+      // --- MOUNT ---
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
