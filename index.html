@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Calculadora de Relación de Aspecto</title>
-
+    
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://archive.org/download/calc_20251123/calculator.png" />
+    <link rel="icon" type="image/png" href="https://w7.pngwing.com/pngs/295/501/png-transparent-calculator-computer-icons-calculator-electronics-desktop-wallpaper-calculator-thumbnail.png" />
     
     <!-- Tailwind CSS (JIT CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -96,7 +96,8 @@
         inputMode,
         id,
         color = 'cyan',
-        className = ''
+        className = '',
+        step
       }) => {
         const borderColor = color === 'cyan' ? 'border-cyan-500' : 'border-pink-500';
         const focusRing = color === 'cyan' ? 'focus:ring-cyan-500/50' : 'focus:ring-pink-500/50';
@@ -116,6 +117,7 @@
                 id={id}
                 type={type}
                 inputMode={inputMode}
+                step={step}
                 value={value}
                 onChange={onChange}
                 readOnly={readOnly}
@@ -251,10 +253,10 @@
             setCustomRatioH(preset.h.toString());
             
             if (width) {
-              const wVal = parseFloat(width.replace(/,/g, ''));
+              const wVal = parseFloat(width); // raw number in dimensions mode
               if (!isNaN(wVal)) {
                  const newH = wVal / (preset.w / preset.h);
-                 setHeight(formatNumber(Math.round(newH)));
+                 setHeight((Math.round(newH * 100) / 100).toString());
               }
             }
           } else if (val === 'custom') {
@@ -266,13 +268,16 @@
         const handleWidthChange = (val) => {
           setWidth(val);
           if (mode === 'dimensions') {
-            const wVal = parseFloat(val.replace(/,/g, ''));
+            // GUARD CLAUSE: Only calculate height if user is interacting with WIDTH input
+            if (document.activeElement && document.activeElement.id !== 'dim-width') return;
+
+            const wVal = parseFloat(val);
             const rW = parseFloat(customRatioW);
             const rH = parseFloat(customRatioH);
             
             if (!isNaN(wVal) && !isNaN(rW) && !isNaN(rH) && rW !== 0) {
               const newH = wVal * (rH / rW);
-              setHeight(formatNumber(Math.round(newH)));
+              setHeight((Math.round(newH * 100) / 100).toString());
             } else if (val === '') {
               setHeight('');
             }
@@ -282,13 +287,16 @@
         const handleHeightChange = (val) => {
           setHeight(val);
           if (mode === 'dimensions') {
-            const hVal = parseFloat(val.replace(/,/g, ''));
+            // GUARD CLAUSE: Only calculate width if user is interacting with HEIGHT input
+            if (document.activeElement && document.activeElement.id !== 'dim-height') return;
+
+            const hVal = parseFloat(val);
             const rW = parseFloat(customRatioW);
             const rH = parseFloat(customRatioH);
 
             if (!isNaN(hVal) && !isNaN(rW) && !isNaN(rH) && rH !== 0) {
               const newW = hVal * (rW / rH);
-              setWidth(formatNumber(Math.round(newW)));
+              setWidth((Math.round(newW * 100) / 100).toString());
             } else if (val === '') {
               setWidth('');
             }
@@ -300,12 +308,12 @@
           setCustomRatioH(newH);
 
           if (width) {
-            const wVal = parseFloat(width.replace(/,/g, ''));
+            const wVal = parseFloat(width);
             const rW = parseFloat(newW);
             const rH = parseFloat(newH);
             if (!isNaN(wVal) && !isNaN(rW) && !isNaN(rH) && rW !== 0) {
                const newHeight = wVal * (rH / rW);
-               setHeight(formatNumber(Math.round(newHeight)));
+               setHeight((Math.round(newHeight * 100) / 100).toString());
             }
           }
         };
@@ -526,6 +534,8 @@
                         onChange={(e) => handleWidthChange(e.target.value)}
                         placeholder="Ancho"
                         color="cyan"
+                        type="number"
+                        step="1"
                         inputMode="decimal"
                       />
                       <RetroInput
@@ -535,6 +545,8 @@
                         onChange={(e) => handleHeightChange(e.target.value)}
                         placeholder="Alto"
                         color="cyan"
+                        type="number"
+                        step="1"
                         inputMode="decimal"
                       />
                     </div>
